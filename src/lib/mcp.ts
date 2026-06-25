@@ -1,10 +1,8 @@
 // src/lib/mcp.ts
 import { MultiServerMCPClient } from '@langchain/mcp-adapters';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
-import { configDir } from '../context/ConfigContext';
+import { MCP_CONFIG_PATH } from '../context/ConfigContext';
 
-const MCP_CONFIG_PATH = path.join(configDir, 'mcp.json');
 let isFirstRun = false;
 
 // Ensure mcp.json exists; create a default one if missing

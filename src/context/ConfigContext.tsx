@@ -8,6 +8,7 @@ export const home = homedir();
 export const configDir = path.join(home, '.potato');
 export const settingsFile = path.join(configDir, 'settings.json');
 export const initFile = path.join(configDir, 'init.json');
+export const MCP_CONFIG_PATH = path.join(configDir, 'mcp.json');
 export const pwd = Bun.env.PWD;
 
 export function isCurrentDirectoryHome(): boolean {
