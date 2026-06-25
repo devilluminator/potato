@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
-import { render, Box, useInput } from 'ink';
+import React, { useEffect, useState } from 'react';
+import { render, Box, Text, useInput } from 'ink';
+import Spinner from 'ink-spinner';
 import { mkdir } from 'node:fs/promises';
 import Logo from './components/Logo';
 import { Provider } from './components/Provider';
@@ -11,6 +12,7 @@ import type { Settings } from './context/ConfigContext';
 // ─── App component ────────────────────────────────────
 const App = () => {
   const { provider, model, resetConfig, setConfig } = useConfig();
+  const [isLoading, setIsLoading] = useState(true);
 
   // ─── Directory + settings check ─────────────────────
   useEffect(() => {
@@ -24,11 +26,12 @@ const App = () => {
         if (exists) {
           const content = await file.text();
           const settings: Settings = JSON.parse(content);
-          // Provider and model are enough now – embed model is handled by Supermemory
           setConfig(settings.provider, settings.model, null);
         }
       } catch (err) {
         console.error('❌ Error while checking/creating config:', err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -42,14 +45,36 @@ const App = () => {
     }
   });
 
+  // ─── Loading state ────────────────────────────────────
+  if (isLoading) {
+    return (
+      <Box flexDirection="column" flexGrow={1} marginBottom={1}>
+        <Logo />
+        <Box marginTop={1} gap={1}>
+          <Text color="greenBright">
+            <Spinner type="dots" />
+          </Text>
+          <Text>Loading configuration…</Text>
+        </Box>
+      </Box>
+    );
+  }
+
   const isConfigured = provider !== null && model !== null;
+
+  if (!isConfigured) {
+    return (
+      <Box flexDirection="column" flexGrow={1} marginBottom={1}>
+        <Logo />
+        <Provider />
+      </Box>
+    );
+  }
 
   return (
     <Box flexDirection="column" flexGrow={1} marginBottom={1}>
-      {!isConfigured && <Logo />}
-      {!isConfigured && <Provider />}
-      {isConfigured && <Chat />}
-      {isConfigured && <Footer />}
+      <Chat />
+      <Footer />
     </Box>
   );
 };

@@ -59,6 +59,9 @@ export const Chat: React.FC = () => {
     const [mcpClient, setMcpClient] = useState<any>(null);
     const [mcpToolsList, setMcpToolsList] = useState<any[]>([]);
 
+    // ─── Loading state ─────────────────────────────────────
+    const [isLoading, setIsLoading] = useState(true);
+
     // ─── Model selector modal ─────────────────────────────
     const [showModelSelector, setShowModelSelector] = useState<boolean>(false);
 
@@ -76,10 +79,14 @@ export const Chat: React.FC = () => {
     const [skills, setSkills] = useState<Array<{ name: string; description: string }>>([]);
     const [showSkills, setShowSkills] = useState<boolean>(false);
 
-    // ─── Load conversation history ────────────────────────
+    const abortControllerRef = useRef<AbortController | null>(null);
+    const mcpClientRef = useRef<any>(null);
+
+    // ─── Combined initialisation ──────────────────────────
     useEffect(() => {
-        const loadHistory = () => {
+        const init = async () => {
             try {
+                // 1. Load conversation history
                 const history = getConversationHistory(threadId, 50);
                 if (history.length > 0) {
                     const formatted = history.map((msg) => ({
@@ -89,55 +96,70 @@ export const Chat: React.FC = () => {
                     setMessages(formatted);
                     console.log(`📜 Loaded ${formatted.length} messages from history.`);
                 }
-            } catch (err) {
-                console.warn('Failed to load conversation history:', err);
-            }
-        };
-        loadHistory();
-    }, [threadId]);
 
-    // ─── Load skills on mount ─────────────────────────────
-    useEffect(() => {
-        const loadSkills = () => {
-            try {
-                const skillsList = listSkills({ userSkillsDir: path.join(configDir, 'skills') });
-                setSkills(skillsList);
-            } catch {
-                setSkills([]);
-            }
-        };
-        loadSkills();
-    }, []);
-    // Load MCP tools on mount
-    useEffect(() => {
-        const initMcp = async () => {
-            try {
-                const { tools, client, serverCount } = await mcpTools();
-                if (serverCount > 0) {
-                    setMcpToolsList(tools);
-                    setMcpClient(client);
-                    console.log(`✅ Loaded ${tools.length} tools from ${serverCount} MCP server(s)`);
-                } else {
-                    console.log('ℹ️ No MCP servers configured');
+                // 2. Load skills
+                try {
+                    const skillsList = listSkills({ userSkillsDir: path.join(configDir, 'skills') });
+                    setSkills(skillsList);
+                } catch {
+                    setSkills([]);
+                }
+
+                // 3. Load MCP tools
+                try {
+                    const { tools, client, serverCount } = await mcpTools();
+                    if (serverCount > 0) {
+                        setMcpToolsList(tools);
+                        setMcpClient(client);
+                        mcpClientRef.current = client;
+                        console.log(`✅ Loaded ${tools.length} tools from ${serverCount} MCP server(s)`);
+                    } else {
+                        console.log('ℹ️ No MCP servers configured');
+                    }
+                } catch (err) {
+                    console.error('❌ Failed to load MCP tools:', err);
                 }
             } catch (err) {
-                console.error('❌ Failed to load MCP tools:', err);
+                console.error('❌ Initialization error:', err);
+            } finally {
+                setIsLoading(false);
             }
         };
-        initMcp();
 
-        // Cleanup: close all MCP connections on unmount
+        init();
+
+        // ─── Cleanup MCP client on unmount ─────────────────
         return () => {
-            if (mcpClient) {
-                mcpClient.close().catch(console.error);
+            if (mcpClientRef.current) {
+                mcpClientRef.current.close().catch(console.error);
             }
+        };
+    }, [threadId]);
+
+    // ─── Ctrl+C / exit handler ────────────────────────────
+    useEffect(() => {
+        const handleExit = async () => {
+            if (mcpClientRef.current) {
+                await mcpClientRef.current.close().catch(console.error);
+            }
+            process.exit(0);
+        };
+
+        const sigintHandler = () => {
+            handleExit();
+        };
+
+        process.on('SIGINT', sigintHandler);
+        process.on('SIGTERM', sigintHandler);
+
+        return () => {
+            process.off('SIGINT', sigintHandler);
+            process.off('SIGTERM', sigintHandler);
         };
     }, []);
-    const abortControllerRef = useRef<AbortController | null>(null);
 
     // ─── Keyboard handling ─────────────────────────────────
     useInput((input, key) => {
-        // Toggle model selector with Ctrl+n
         if (key.ctrl && input === 'n') {
             setShowModelSelector((prev) => !prev);
             return;
@@ -318,7 +340,7 @@ export const Chat: React.FC = () => {
                 abortControllerRef.current = null;
             }
         },
-        [provider, model, isProcessing, showSkills, threadId]
+        [provider, model, isProcessing, showSkills, threadId, mcpToolsList]
     );
 
     const formatNumber = (num: number): string => {
@@ -365,6 +387,20 @@ export const Chat: React.FC = () => {
     }, []);
 
     // ─── Render ───────────────────────────────────────────
+    if (isLoading) {
+        return (
+            <Box flexDirection="column" paddingX={1} gap={1}>
+                <Box gap={1}>
+                    <Text color="greenBright">
+                        <Spinner type="dots" />
+                    </Text>
+                    <Text>Loading chat…</Text>
+                </Box>
+                <Text dimColor>Initialising history, skills, MCP servers…</Text>
+            </Box>
+        );
+    }
+
     return (
         <Box flexDirection="column" paddingX={1} gap={1}>
             <Text dimColor>Session: {hashedPwdDisplay}</Text>
