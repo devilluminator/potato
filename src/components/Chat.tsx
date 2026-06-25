@@ -20,6 +20,7 @@ import { MemorySaver } from '@langchain/langgraph-checkpoint';
 import { searchMemoryTool, addMemoryTool } from '../tools/memoryTools';
 import { addMessage, getConversationHistory } from '../lib/database';
 import { ModelSelectorModal } from './ModelSelectorModal';
+import { mcpTools } from '../lib/mcp';
 
 // ─── Types ──────────────────────────────────────────────
 type MessageMetrics = {
@@ -55,6 +56,8 @@ export const Chat: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const [currentResponse, setCurrentResponse] = useState<string>('');
     const [currentThinking, setCurrentThinking] = useState<string>('');
+    const [mcpClient, setMcpClient] = useState<any>(null);
+    const [mcpToolsList, setMcpToolsList] = useState<any[]>([]);
 
     // ─── Model selector modal ─────────────────────────────
     const [showModelSelector, setShowModelSelector] = useState<boolean>(false);
@@ -105,7 +108,31 @@ export const Chat: React.FC = () => {
         };
         loadSkills();
     }, []);
+    // Load MCP tools on mount
+    useEffect(() => {
+        const initMcp = async () => {
+            try {
+                const { tools, client, serverCount } = await mcpTools();
+                if (serverCount > 0) {
+                    setMcpToolsList(tools);
+                    setMcpClient(client);
+                    console.log(`✅ Loaded ${tools.length} tools from ${serverCount} MCP server(s)`);
+                } else {
+                    console.log('ℹ️ No MCP servers configured');
+                }
+            } catch (err) {
+                console.error('❌ Failed to load MCP tools:', err);
+            }
+        };
+        initMcp();
 
+        // Cleanup: close all MCP connections on unmount
+        return () => {
+            if (mcpClient) {
+                mcpClient.close().catch(console.error);
+            }
+        };
+    }, []);
     const abortControllerRef = useRef<AbortController | null>(null);
 
     // ─── Keyboard handling ─────────────────────────────────
@@ -186,6 +213,7 @@ export const Chat: React.FC = () => {
                         webSearch,
                         searchMemoryTool,
                         addMemoryTool,
+                        ...mcpToolsList,
                     ],
                     systemPrompt: CODING_AGENT_SYSTEM_PROMPT,
                     backend,

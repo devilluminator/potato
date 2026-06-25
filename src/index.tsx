@@ -46,8 +46,7 @@ const App = () => {
 
   return (
     <Box flexDirection="column" flexGrow={1} marginBottom={1}>
-      <Logo />
-
+      {!isConfigured && <Logo />}
       {!isConfigured && <Provider />}
       {isConfigured && <Chat />}
       {isConfigured && <Footer />}
