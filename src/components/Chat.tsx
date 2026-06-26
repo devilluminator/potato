@@ -6,7 +6,7 @@ import { createDeepAgent, FilesystemBackend, listSkills } from 'deepagents';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatOllama } from '@langchain/ollama';
 import { HumanMessage } from '@langchain/core/messages';
-import { useConfig, pwd, configDir } from '../context/ConfigContext';
+import { useConfig, pwd, configDir, home } from '../context/ConfigContext';
 import Spinner from 'ink-spinner';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
@@ -99,7 +99,7 @@ export const Chat: React.FC = () => {
 
                 // 2. Load skills
                 try {
-                    const skillsList = listSkills({ userSkillsDir: path.join(configDir, 'skills') });
+                    const skillsList = listSkills({ userSkillsDir: path.join(home, '.agents', 'skills') });
                     setSkills(skillsList);
                 } catch {
                     setSkills([]);
@@ -239,9 +239,11 @@ export const Chat: React.FC = () => {
                     ],
                     systemPrompt: CODING_AGENT_SYSTEM_PROMPT,
                     backend,
-                    skills: [path.join(configDir, 'skills')],
+                    skills: [path.join(home, '.agents', 'skills')],
                     middleware: [stringifyToolMessagesMiddleware],
                     checkpointer: checkpointerRef.current!,
+                }).withConfig({
+                    recursionLimit: 300
                 });
 
                 const fullMessages = [new HumanMessage(userInput.trim())];
@@ -356,7 +358,7 @@ export const Chat: React.FC = () => {
                 await mkdir(configDir, { recursive: true });
                 console.log(`📁 Config directory ready: ${configDir}`);
 
-                const skillsDir = path.join(configDir, 'skills');
+                const skillsDir = path.join(home, '.agents', 'skills');
                 await mkdir(skillsDir, { recursive: true });
                 console.log(`📁 Skills directory ready: ${skillsDir}`);
 
@@ -477,7 +479,7 @@ export const Chat: React.FC = () => {
                                 </Box>
                             ))
                         ) : (
-                            <Text dimColor>No skills found in ~/.potato/skills/</Text>
+                            <Text dimColor>No skills found in ~/.agents/skills/</Text>
                         )}
                     </Box>
                 </Box>
