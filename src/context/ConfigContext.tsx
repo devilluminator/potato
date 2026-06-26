@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import { homedir } from 'node:os';
 import path, { resolve } from 'node:path';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { cwd } from 'node:process';
 
 // ─── Path constants ────────────────────────────────────
 export const home = homedir();
@@ -9,7 +10,7 @@ export const configDir = path.join(home, '.potato');
 export const settingsFile = path.join(configDir, 'settings.json');
 export const initFile = path.join(configDir, 'init.json');
 export const MCP_CONFIG_PATH = path.join(configDir, 'mcp.json');
-export const pwd = Bun.env.PWD;
+export const pwd = cwd()
 
 export function isCurrentDirectoryHome(): boolean {
     const normalizedCwd = resolve(process.cwd());
