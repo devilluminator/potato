@@ -12,7 +12,7 @@ export const MCP_CONFIG_PATH = path.join(configDir, 'mcp.json');
 export const pwd = Bun.env.PWD;
 
 export function isCurrentDirectoryHome(): boolean {
-    const normalizedCwd = resolve(pwd!);
+    const normalizedCwd = resolve(process.cwd());
     const normalizedHome = resolve(homedir());
     return normalizedCwd === normalizedHome;
 }

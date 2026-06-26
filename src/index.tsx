@@ -1,3 +1,8 @@
+// ─── Compiled binary shim ─────────────────────────────
+import { dirname } from 'path';
+(globalThis as any).__dirname ??= dirname(process.execPath);
+(globalThis as any).__filename ??= process.execPath;
+
 import React, { useEffect, useState } from 'react';
 import { render, Box, Text, useInput } from 'ink';
 import Spinner from 'ink-spinner';
