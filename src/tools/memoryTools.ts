@@ -1,8 +1,7 @@
 import { tool } from 'langchain';
 import { z } from 'zod';
-import { DEFAULT_CONTAINER_TAG } from '../lib/supermemory';
 
-const SUPERMEMORY_BASE_URL = 'http://localhost:8787';
+const SUPERMEMORY_BASE_URL = process.env.SUPERMEMORY_BASE_URL || 'http://localhost:8787';
 
 // ─── Helper: fetch with error handling ──────────────────
 async function supermemoryFetch(endpoint: string, options: RequestInit) {
@@ -28,7 +27,7 @@ export const searchMemoryTool = tool(
                 method: 'POST',
                 body: JSON.stringify({
                     q: query,
-                    containerTag: containerTag || DEFAULT_CONTAINER_TAG,
+                    containerTag: containerTag || 'default-user',
                     limit: 5,
                 }),
             });
@@ -55,7 +54,7 @@ export const addMemoryTool = tool(
                 method: 'POST',
                 body: JSON.stringify({
                     content,
-                    containerTag: containerTag || DEFAULT_CONTAINER_TAG,
+                    containerTag: containerTag || 'default-user',
                     metadata,
                 }),
             });
@@ -82,7 +81,7 @@ export const profileTool = tool(
             const result = await supermemoryFetch('/profile', {
                 method: 'GET',
                 headers: {
-                    'container-tag': containerTag || DEFAULT_CONTAINER_TAG,
+                    'container-tag': containerTag || 'default-user',
                 },
             });
             return JSON.stringify(result, null, 2);
