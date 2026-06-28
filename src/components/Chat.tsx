@@ -58,6 +58,8 @@ export const Chat: React.FC = () => {
     const [currentThinking, setCurrentThinking] = useState<string>('');
     const [mcpClient, setMcpClient] = useState<any>(null);
     const [mcpToolsList, setMcpToolsList] = useState<any[]>([]);
+    // ─── AGENTS.md content ──────────────────────────────────
+    const [agentsMdContent, setAgentsMdContent] = useState<string | null>(null);
 
     // ─── Loading state ─────────────────────────────────────
     const [isLoading, setIsLoading] = useState(true);
@@ -123,6 +125,20 @@ export const Chat: React.FC = () => {
                 console.error('❌ Initialization error:', err);
             } finally {
                 setIsLoading(false);
+            }
+            // 4. Load AGENTS.md if present
+            const agentsMdPath = path.join(process.cwd(), 'AGENTS.md');
+            try {
+                const file = Bun.file(agentsMdPath);
+                if (await file.exists()) {
+                    const content = await file.text();
+                    setAgentsMdContent(content);
+                    console.log(`📄 Loaded AGENTS.md (${content.length} chars)`);
+                } else {
+                    console.log('ℹ️ No AGENTS.md found in project root');
+                }
+            } catch (err) {
+                console.warn('Failed to read AGENTS.md:', err);
             }
         };
 
@@ -226,7 +242,9 @@ export const Chat: React.FC = () => {
                         });
 
                 const backend = new FilesystemBackend({ rootDir: configDir });
-
+                const systemPrompt = agentsMdContent
+                    ? `${CODING_AGENT_SYSTEM_PROMPT}\n\n---\n\n# Project-specific instructions (from AGENTS.md):\n${agentsMdContent}`
+                    : CODING_AGENT_SYSTEM_PROMPT;
                 const agent = createDeepAgent({
                     model: llm,
                     tools: [
@@ -237,7 +255,7 @@ export const Chat: React.FC = () => {
                         addMemoryTool,
                         ...mcpToolsList,
                     ],
-                    systemPrompt: CODING_AGENT_SYSTEM_PROMPT,
+                    systemPrompt: systemPrompt,
                     backend,
                     skills: [path.join(home, '.agents', 'skills')],
                     middleware: [stringifyToolMessagesMiddleware],
