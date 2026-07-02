@@ -6,11 +6,11 @@ import { cwd } from 'node:process';
 
 // ─── Path constants ────────────────────────────────────
 export const home = homedir();
+export const pwd = cwd()
 export const configDir = path.join(home, '.potato');
 export const settingsFile = path.join(configDir, 'settings.json');
-export const initFile = path.join(configDir, 'init.json');
+export const initFile = path.join(pwd, 'init.json');
 export const MCP_CONFIG_PATH = path.join(configDir, 'mcp.json');
-export const pwd = cwd()
 
 export function isCurrentDirectoryHome(): boolean {
     const normalizedCwd = resolve(process.cwd());
@@ -78,14 +78,17 @@ function readInitFile(): { locked: boolean } {
 
 function writeInitFile(locked: boolean) {
     ensureConfigDir();
-    try {
-        let data: any = { locked };
-        if (existsSync(initFile)) {
-            const content = readFileSync(initFile, 'utf-8');
-            const existing = JSON.parse(content);
-            data = { ...existing, locked };
+    let existing: any = {};
+    if (existsSync(initFile)) {
+        try {
+            existing = JSON.parse(readFileSync(initFile, 'utf-8'));
+        } catch (e) {
+            console.error('init.json was corrupted, resetting:', e);
+            existing = {};
         }
-        writeFileSync(initFile, JSON.stringify(data, null, 2));
+    }
+    try {
+        writeFileSync(initFile, JSON.stringify({ ...existing, locked }, null, 2));
     } catch (e) {
         console.error('Failed to write init.json:', e);
     }
@@ -132,8 +135,8 @@ export const ConfigProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setProvider(null);
         setModel(null);
         setHfEmbedModel(null);
-        setLockedState(false);
-        writeInitFile(false);
+        setLockedState(true);
+        writeInitFile(true);
     };
 
     // ─── On mount, ensure config dir exists ────────────

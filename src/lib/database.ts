@@ -122,7 +122,7 @@ export function addMessage(
 
 export function getConversationHistory(
     threadId: string,
-    limit: number = 20
+    limit: number = 30
 ): ConversationMessage[] {
     const stmt = db.prepare(`
         SELECT id, thread_id, role, content, created_at

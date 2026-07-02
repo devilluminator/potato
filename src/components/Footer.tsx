@@ -3,7 +3,7 @@ import { Box, Text } from 'ink';
 import { useConfig, pwd, isCurrentDirectoryHome, MCP_CONFIG_PATH } from '../context/ConfigContext';
 
 function Footer() {
-    const { model } = useConfig();
+    const { model, locked } = useConfig();
     const [mcpLength, setMcpLength] = useState(0);
 
     useEffect(() => {
@@ -52,6 +52,10 @@ function Footer() {
                 <Box flexDirection="column">
                     <Text dimColor>MCP</Text>
                     <Text dimColor>{mcpLength}</Text>
+                </Box>
+                <Box flexDirection="column">
+                    <Text dimColor>Locked</Text>
+                    <Text dimColor>{locked ? 'True' : 'False'}</Text>
                 </Box>
             </Box>
         </Box>

@@ -17,7 +17,8 @@ import { webSearch } from '../tools/websearch';
 import { CODING_AGENT_SYSTEM_PROMPT } from '../utils/systemprompt';
 import { stringifyToolMessagesMiddleware } from '../lib/stringifytoolmessages';
 import { MemorySaver } from '@langchain/langgraph-checkpoint';
-import { searchMemoryTool, addMemoryTool } from '../tools/memoryTools';
+// import { searchMemoryTool, addMemoryTool } from '../tools/superMemoryTools';
+import { searchMemoryTool, addMemoryTool } from '../tools/ollamaMemory';
 import { addMessage, getConversationHistory } from '../lib/database';
 import { ModelSelectorModal } from './ModelSelectorModal';
 import { mcpTools } from '../lib/mcp';
@@ -384,7 +385,7 @@ export const Chat: React.FC = () => {
                 const file = Bun.file(initPath);
                 const exists = await file.exists();
                 if (!exists) {
-                    await Bun.write(initPath, JSON.stringify({ locked: false, session: hashedPwdDisplay }, null, 2));
+                    await Bun.write(initPath, JSON.stringify({ locked: true, session: hashedPwdDisplay }, null, 2));
                     console.log('✅ Created default init.json');
                 } else {
                     console.log('ℹ️ init.json already exists');

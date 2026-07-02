@@ -16,7 +16,7 @@ import type { Settings } from './context/ConfigContext';
 
 // ─── App component ────────────────────────────────────
 const App = () => {
-  const { provider, model, resetConfig, setConfig } = useConfig();
+  const { provider, model, resetConfig, setConfig, setLocked, locked } = useConfig();
   const [isLoading, setIsLoading] = useState(true);
 
   // ─── Directory + settings check ─────────────────────
@@ -47,6 +47,9 @@ const App = () => {
   useInput((input, key) => {
     if (key.ctrl && input === 'r' && provider && model) {
       resetConfig();
+    }
+    if (key.ctrl && input === 'l') {
+      setLocked(!locked);
     }
   });
 
